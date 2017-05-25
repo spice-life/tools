@@ -1,0 +1,41 @@
+<input type="file" id="input"></input>
+<script>
+  const reader = new FileReader()
+  const parser = new DOMParser()
+  const serializer = new XMLSerializer()
+  reader.onload = event => {
+    const dom = parser.parseFromString(event.target.result, 'image/svg+xml')
+    Array.prototype.forEach.call(dom.documentElement.children, g => {
+      const type = g.getAttribute('data-type')
+      if (type === 'userArt') {
+        const image = g.children[0]
+        image.parentNode.removeChild(image)
+      } else {
+        const image = g.children[0]
+        const x = image.getAttribute('x')
+        const y = image.getAttribute('y')
+        const width = image.getAttribute('width')
+        const height = image.getAttribute('height')
+        const href = image.getAttributeNS('http://www.w3.org/1999/xlink', 'href').split('data:image/svg+xml;base64,')[1]
+        const d = parser.parseFromString(atob(href), 'image/svg+xml')
+        const root = d.documentElement
+        root.setAttribute('x', x)
+        root.setAttribute('y', y)
+        root.setAttribute('width', width)
+        root.setAttribute('height', height)
+        g.appendChild(root)
+        image.parentNode.removeChild(image)
+      }
+    })
+    const dest = new Blob([serializer.serializeToString(dom)], {
+      type: 'octet/stream'
+    })
+    const a = document.createElement('a')
+    a.style = 'display:none;'
+    a.href = URL.createObjectURL(dest)
+    a.download = 'converted.svg'
+    document.body.appendChild(a)
+    a.click()
+  }
+  document.getElementById('input').addEventListener('change', event => reader.readAsText(event.target.files[0]))
+</script>
